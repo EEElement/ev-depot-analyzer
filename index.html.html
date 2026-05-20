@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EV Depot Needs Analyzer — Element Charging</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --c1:#00D7D2;--c2:#05AFDC;--c3:#AAFFD2;
+  --s4:#4B6478;--s6:#46505A;
+  --ink:#3C3C3C;--mid:#A0A0A0;--light:#E3E3E3;--off:#F5F5F5;
+  --warn-bg:#FFF8ED;--warn-b:#F4B942;--warn-t:#7A4D00;
+  --ok-bg:#E6FAF8;--ok-b:#00D7D2;--ok-t:#004D4B;
+  --info-bg:#E8F4FA;--info-b:#05AFDC;--info-t:#024060;
+  --white:#FFFFFF;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',Arial,sans-serif;background:#F0F2F4;color:var(--ink);font-size:13px;line-height:1.5;min-height:100vh;padding:20px}
+
+/* Page shell */
+.page{max-width:900px;margin:0 auto}
+.page-header{text-align:center;padding:24px 0 20px}
+.page-title{font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:6px}
+.page-for{font-size:11px;color:var(--mid);background:#fff;display:inline-block;padding:3px 12px;border-radius:20px;border:1px solid var(--light);margin-top:4px}
+
+/* Card wrapper */
+.card{background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--light);box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:16px}
+
+/* Header */
+.hdr{background:var(--s6);padding:18px 32px;display:flex;align-items:center;justify-content:space-between}
+.hdr-badge{background:rgba(0,215,210,.15);border:1px solid rgba(0,215,210,.35);color:var(--c1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:20px}
+
+/* Body sections */
+.body{padding:0}
+.sec{padding:22px 32px;border-bottom:1px solid var(--light)}
+.sec:last-child{border-bottom:none}
+.sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.snum{width:22px;height:22px;border-radius:50%;background:var(--s4);color:#fff;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .3s}
+.snum.done{background:var(--c1)}
+.stitle{font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--s4)}
+
+/* Form */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--mid)}
+.fld input,.fld select{border:1px solid var(--light);border-radius:7px;padding:9px 11px;font-size:13px;color:var(--ink);font-family:inherit;background:#fff;width:100%;transition:border .15s}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--c1);box-shadow:0 0 0 3px rgba(0,215,210,.1)}
+.fld select:disabled,.fld input:disabled{background:var(--off);color:var(--mid);cursor:not-allowed}
+.sub{font-size:10px;color:var(--mid);margin-top:3px;line-height:1.4}
+
+/* Vehicle cards */
+.vc-list{display:flex;flex-direction:column;gap:12px}
+.vc{border:1px solid var(--light);border-radius:10px;overflow:hidden;transition:border-color .2s}
+.vc.sel{border-color:var(--c1)}
+.vc-top{background:var(--off);padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.vc-lbl{font-size:11px;font-weight:600;color:var(--s4);letter-spacing:.5px;text-transform:uppercase}
+.vc-rm{background:none;border:none;cursor:pointer;color:var(--mid);font-size:20px;line-height:1;padding:0 4px;border-radius:4px;font-family:inherit}
+.vc-rm:hover{background:var(--light);color:var(--ink)}
+.vc-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+.vc-sec-lbl{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--mid);margin-bottom:8px}
+.vc-divider{height:1px;background:var(--light)}
+.add-vc{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:11px;border:1.5px dashed var(--c1);border-radius:8px;background:transparent;color:var(--c1);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:10px;transition:background .15s}
+.add-vc:hover{background:var(--ok-bg)}
+
+/* Route pills */
+.route-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.rpill{padding:6px 14px;font-size:12px;border-radius:20px;border:1px solid var(--light);background:var(--off);color:var(--mid);cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.rpill.on{background:var(--s4);border-color:var(--s4);color:#fff}
+.rpill:hover:not(.on):not(:disabled){background:var(--light)}
+.rpill:disabled{cursor:not-allowed;opacity:.5}
+
+/* Climate / opp pills */
+.spill{padding:6px 12px;font-size:11px;border-radius:20px;border:1px solid var(--light);background:var(--off);color:var(--mid);cursor:pointer;font-family:inherit;transition:all .15s}
+.spill.on{background:var(--c1);border-color:var(--c1);color:#fff}
+.spill:hover:not(.on):not(:disabled){background:var(--light)}
+.spill:disabled{cursor:not-allowed;opacity:.5}
+
+/* Generate */
+.gen-wrap{padding:20px 32px 28px}
+.gen-btn{width:100%;padding:14px;background:var(--s4);border:none;color:#fff;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .2s;letter-spacing:.2px}
+.gen-btn:hover:not(:disabled){background:var(--s6)}
+.gen-btn:disabled{background:var(--light);color:var(--mid);cursor:not-allowed}
+.reset-lnk{display:none;width:100%;margin-top:8px;padding:9px;background:transparent;border:1px solid var(--light);color:var(--mid);border-radius:9px;font-size:12px;cursor:pointer;font-family:inherit}
+.reset-lnk:hover{background:var(--off)}
+
+/* Scenarios */
+.sc-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.sc-tab{padding:5px 14px;font-size:12px;border-radius:20px;border:1px solid var(--light);background:var(--off);color:var(--mid);cursor:pointer;font-family:inherit;transition:all .15s}
+.sc-tab.on{background:var(--s4);border-color:var(--s4);color:#fff}
+.sc-add{padding:5px 12px;font-size:12px;border-radius:20px;border:1px solid var(--c1);color:var(--c1);background:transparent;cursor:pointer;margin-left:auto;font-family:inherit}
+.sc-add:hover{background:var(--ok-bg)}
+
+/* Results card */
+.results{display:none}
+.res-lbl{font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--s4);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.res-lbl::before{content:'';display:inline-block;width:3px;height:14px;background:var(--c1);border-radius:2px}
+
+/* Legend */
+.type-legend{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.tleg{display:flex;align-items:flex-start;gap:8px;background:var(--off);border-radius:8px;padding:10px 12px;border:1px solid var(--light)}
+.tleg-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.tleg-name{font-size:11px;font-weight:600;color:var(--s4);margin-bottom:2px}
+.tleg-desc{font-size:10px;color:var(--mid);line-height:1.5}
+
+/* Route callout */
+.route-callout{background:var(--info-bg);border:1px solid var(--info-b);border-radius:10px;padding:14px 18px;margin-bottom:4px}
+.route-callout-title{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--info-t);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.route-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.rtag{font-size:11px;padding:3px 10px;border-radius:12px;background:rgba(5,175,220,.1);color:var(--info-t);border:1px solid rgba(5,175,220,.2);font-weight:500}
+.rtag.warn{background:rgba(244,185,66,.1);color:var(--warn-t);border-color:rgba(244,185,66,.25)}
+
+/* Spec cards */
+.spec-card{border:1px solid var(--light);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.spec-card-hdr{background:var(--s4);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.spec-card-name{color:#fff;font-size:13px;font-weight:500}
+.spec-card-meta{color:rgba(255,255,255,.5);font-size:11px}
+.spec-row{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--light)}
+.sp{background:#fff;padding:10px;text-align:center}
+.sp-l{font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--mid);margin-bottom:3px}
+.sp-v{font-size:15px;font-weight:500;color:var(--ink)}
+.sp-u{font-size:9px;color:var(--mid)}
+.route-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(0,215,210,.15);color:var(--ok-t);border:1px solid rgba(0,215,210,.3);font-weight:600}
+
+/* Recommendation */
+.rec-hdr{background:var(--s6);border-radius:10px 10px 0 0;padding:18px 22px}
+.rec-eye{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--c1);margin-bottom:6px}
+.rec-main{font-size:17px;font-weight:300;color:#fff;line-height:1.45}
+.rec-body{background:#fff;border:1px solid var(--light);border-top:none;border-radius:0 0 10px 10px;padding:20px 22px;margin-bottom:14px}
+.rec-why{font-size:13px;color:var(--s6);line-height:1.75;margin-bottom:20px}
+
+/* Charger boxes */
+.charger-result{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--light);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.ch-box{background:#fff;padding:18px 20px}
+.ch-box.hi{background:var(--ok-bg)}
+.ch-type-label{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--c2);margin-bottom:4px}
+.ch-count{font-size:44px;font-weight:300;color:var(--ink);line-height:1}
+.ch-name{font-size:12px;color:var(--mid);margin-top:2px}
+.ch-sub{font-size:11px;color:var(--mid);margin-top:10px;line-height:1.5;padding-top:10px;border-top:1px solid var(--light)}
+
+/* Fleet table */
+.tbl-wrap{overflow-x:auto;margin-bottom:16px}
+.fleet-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
+.fleet-tbl th{padding:9px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--mid);border-bottom:1px solid var(--light);background:var(--off);white-space:nowrap}
+.fleet-tbl td{padding:9px 10px;border-bottom:1px solid var(--off);color:var(--ink);vertical-align:middle}
+.fleet-tbl tr:last-child td{border-bottom:none}
+.fleet-tbl tr.total-row td{background:var(--off);font-weight:600;color:var(--s4);border-top:1px solid var(--light)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.badge-l2{background:#E8F4FA;color:var(--info-t)}
+.badge-l3{background:var(--ok-bg);color:var(--ok-t)}
+.badge-mix{background:#f0f0f8;color:var(--s4)}
+
+/* Totals */
+.tots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.tot{background:var(--off);border-radius:8px;padding:14px;text-align:center;border:1px solid var(--light)}
+.tot-l{font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--mid);margin-bottom:4px}
+.tot-v{font-size:26px;font-weight:500;color:var(--s4)}
+.tot-u{font-size:10px;color:var(--mid)}
+
+/* Flags */
+.flag{display:flex;gap:8px;align-items:flex-start;padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:8px;line-height:1.5}
+.fw{background:var(--warn-bg);border:1px solid var(--warn-b);color:var(--warn-t)}
+.fo{background:var(--ok-bg);border:1px solid var(--ok-b);color:var(--ok-t)}
+.fi{background:var(--info-bg);border:1px solid var(--info-b);color:var(--info-t)}
+.flag svg{flex-shrink:0;margin-top:1px}
+
+/* Scenario compare */
+.cmp{display:none;margin-top:14px}
+.cmp-l{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mid);margin-bottom:8px}
+.cmp-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.cmp-tbl th{padding:8px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--mid);border-bottom:1px solid var(--light);background:var(--off)}
+.cmp-tbl td{padding:8px 10px;border-bottom:1px solid var(--off);color:var(--ink)}
+.cmp-tbl tr.on td{background:var(--ok-bg);color:var(--ok-t);font-weight:500}
+
+/* Download row */
+.dl-row{display:flex;gap:8px;flex-wrap:wrap;padding-top:16px;border-top:1px solid var(--light);margin-top:6px}
+.dl-p{padding:10px 20px;background:var(--s4);border:none;color:#fff;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;transition:background .2s}
+.dl-p:hover{background:var(--s6)}
+.dl-s{padding:10px 16px;background:transparent;border:1px solid var(--light);color:var(--mid);border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit}
+.dl-s:hover{background:var(--off)}
+
+/* Footer */
+.ftr{background:var(--s6);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.ftr-t{color:rgba(255,255,255,.4);font-size:11px}
+.ftr-ver{color:rgba(255,255,255,.25);font-size:10px}
+
+/* Print styles */
+@media print{
+  body{background:#fff;padding:0}
+  .gen-wrap,.reset-lnk,.dl-row,.add-vc,.vc-rm,.sc-add,.sc-row{display:none!important}
+  .card{box-shadow:none;border:1px solid #ccc}
+  .results{display:block!important}
+}
+
+/* Responsive */
+@media(max-width:640px){
+  body{padding:10px}
+  .sec{padding:16px}
+  .row3{grid-template-columns:1fr 1fr}
+  .spec-row{grid-template-columns:repeat(3,1fr)}
+  .tots{grid-template-columns:1fr 1fr}
+  .charger-result{grid-template-columns:1fr}
+  .type-legend{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="page-header">
+    <div class="page-title">Internal Advisory Tool</div>
+    <div class="page-for">For FPS Partner Use — Element Charging</div>
+  </div>
+
+  <div class="card">
+    <!-- Header -->
+    <div class="hdr">
+      <svg height="34" viewBox="0 0 210 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#05AFDC"/>
+            <stop offset="60%" stop-color="#00D7D2"/>
+            <stop offset="100%" stop-color="#004D4B"/>
+          </linearGradient>
+        </defs>
+        <path d="M22 3 A19 19 0 1 1 6.5 34.5" stroke="url(#lg1)" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <circle cx="8" cy="37" r="4.5" fill="#05AFDC"/>
+        <text x="48" y="26" font-family="DM Sans,Arial,sans-serif" font-size="21" font-weight="300" fill="#ffffff" letter-spacing="0.3">element</text>
+        <text x="49" y="40" font-family="DM Sans,Arial,sans-serif" font-size="11" font-weight="400" fill="#00D7D2" letter-spacing="0.8">Charging</text>
+      </svg>
+      <div class="hdr-badge">Depot Needs Analyzer</div>
+    </div>
+
+    <div class="body">
+
+      <!-- Step 1 -->
+      <div class="sec">
+        <div class="sec-hdr"><div class="snum" id="n1">1</div><div class="stitle">Client details</div></div>
+        <div style="max-width:360px">
+          <div class="fld">
+            <label>Client name</label>
+            <input id="clientName" type="text" placeholder="e.g. Acme Logistics" oninput="chk()"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="sec">
+        <div class="sec-hdr"><div class="snum" id="n2">2</div><div class="stitle">Fleet vehicle types</div></div>
+        <div class="vc-list" id="vcList"></div>
+        <button class="add-vc" onclick="addVc()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add another vehicle type
+        </button>
+        <div class="sub" style="margin-top:8px">Add each distinct EV model in the fleet. Each type gets its own count, mileage, dwell time and route profile. One combined recommendation is generated for the whole fleet.</div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="sec">
+        <div class="sec-hdr"><div class="snum" id="n3">3</div><div class="stitle">Scenarios</div></div>
+        <div class="sc-row" id="scTabs"></div>
+        <div class="sub">Adjust any vehicle's inputs above and generate again to compare scenarios side by side.</div>
+      </div>
+
+    </div>
+
+    <div class="gen-wrap">
+      <button class="gen-btn" id="genBtn" disabled onclick="generate()">Generate recommendation</button>
+      <button class="reset-lnk" id="resetBtn" onclick="resetAll()">Reset &amp; start over</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+
+    <div class="card">
+      <div class="sec">
+        <div class="res-lbl">Charger types</div>
+        <div class="type-legend">
+          <div class="tleg"><div class="tleg-dot" style="background:#05AFDC"></div><div><div class="tleg-name">L2 — Standard AC Charging</div><div class="tleg-desc">240V AC, 7–11 kW. Replenishes most vehicles in 4–10 hours. Best for overnight or long-dwell depot charging.</div></div></div>
+          <div class="tleg"><div class="tleg-dot" style="background:#00D7D2"></div><div><div class="tleg-name">L3 — DC Fast Charging (DCFC)</div><div class="tleg-desc">480V+ DC, 50–350 kW. Charges to 80% in under 1 hour. Required when dwell is short, mileage is high, or route patterns are demanding.</div></div></div>
+        </div>
+
+        <div class="res-lbl">Route analysis applied</div>
+        <div class="route-callout" id="routeCallout"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">
+        <div class="res-lbl">Vehicle specifications</div>
+        <div id="specOut"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">
+        <div class="res-lbl">Fleet charging recommendation</div>
+        <div class="rec-hdr"><div class="rec-eye">EV Charging Advisory · Element Charging</div><div class="rec-main" id="recMain">—</div></div>
+        <div class="rec-body">
+          <div class="rec-why" id="recWhy">—</div>
+          <div class="charger-result" id="chargerResult"></div>
+
+          <div class="res-lbl">Fleet breakdown</div>
+          <div class="tbl-wrap"><table class="fleet-tbl" id="fleetTbl"></table></div>
+
+          <div class="tots">
+            <div class="tot"><div class="tot-l">Total fleet</div><div class="tot-v" id="tFleet">—</div><div class="tot-u">vehicles</div></div>
+            <div class="tot"><div class="tot-l">L2 standard chargers</div><div class="tot-v" id="tL2">—</div><div class="tot-u">required</div></div>
+            <div class="tot"><div class="tot-l">L3 fast chargers</div><div class="tot-v" id="tL3">—</div><div class="tot-u">required</div></div>
+          </div>
+
+          <div id="flagsArea"></div>
+
+          <div class="cmp" id="cmpWrap">
+            <div class="cmp-l">Scenario comparison</div>
+            <div style="overflow-x:auto"><table class="cmp-tbl" id="cmpTbl"></table></div>
+          </div>
+
+          <div class="dl-row">
+            <button class="dl-p" onclick="dlTxt()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download summary (.txt)
+            </button>
+            <button class="dl-s" onclick="printPage()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print / Save as PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="card" style="margin-top:0">
+    <div class="ftr">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="18" height="18" viewBox="0 0 36 36" fill="none">
+          <path d="M18 3 A15 15 0 1 1 6 27" stroke="#00D7D2" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          <circle cx="7" cy="29" r="3" fill="#05AFDC"/>
+        </svg>
+        <span class="ftr-t">element Charging · EV Depot Needs Analyzer · Internal Advisory Tool</span>
+      </div>
+      <span class="ftr-ver">v1.0 · For FPS Partner Internal Use</span>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── ROUTE & CLIMATE CONFIG ─────────────────────────────
+const ROUTE_TYPES={
+  highway: {label:'Highway / Long haul',   icon:'🛣', effMult:0.95, dwellNote:'Predictable returns, consistent dwell time.'},
+  mixed:   {label:'Mixed urban & highway', icon:'🔀', effMult:1.05, dwellNote:'Some route variability; moderate dwell consistency.'},
+  urban:   {label:'Urban stop-start',      icon:'🏙', effMult:1.15, dwellNote:'Higher energy use from frequent stops. Staggered returns reduce effective dwell ~10%.'},
+  delivery:{label:'Multi-stop delivery',   icon:'📦', effMult:1.20, dwellNote:'Highest energy draw. Mid-route stops may serve as opportunity charging windows.'},
+};
+const CLIMATE={
+  temperate:{label:'Temperate',  rangeMult:1.00},
+  cold:     {label:'Cold / Winter', rangeMult:0.80},
+  hot:      {label:'Hot / Summer',  rangeMult:0.92},
+};
+
+// ── VEHICLE DATABASE ────────────────────────────────────
+const SPECS=[
+  {make:"AUDI",model:"A6 E-TRON",c:"LDV",bat:94,range:536,eff:0.1754,maxAC:9.6,maxDC:270},
+  {make:"AUDI",model:"E-TRON",c:"LDV",bat:95,range:357,eff:0.2661,maxAC:9.6,maxDC:150},
+  {make:"AUDI",model:"E-TRON GT",c:"LDV",bat:93,range:383,eff:0.2428,maxAC:9.6,maxDC:270},
+  {make:"AUDI",model:"Q4 E-TRON",c:"LDV",bat:82,range:388,eff:0.2113,maxAC:9.6,maxDC:150},
+  {make:"AUDI",model:"Q6 E-TRON",c:"LDV",bat:94,range:494,eff:0.1903,maxAC:9.6,maxDC:270},
+  {make:"AUDI",model:"Q8 E-TRON",c:"LDV",bat:106,range:459,eff:0.2309,maxAC:9.6,maxDC:170},
+  {make:"AUDI",model:"S6 E-TRON",c:"LDV",bat:94,range:521,eff:0.1804,maxAC:9.6,maxDC:270},
+  {make:"BMW",model:"I4",c:"LDV",bat:84,range:484,eff:0.1736,maxAC:11,maxDC:200},
+  {make:"BMW",model:"I5",c:"LDV",bat:81,range:399,eff:0.2030,maxAC:11,maxDC:205},
+  {make:"BMW",model:"I7",c:"LDV",bat:106,range:476,eff:0.2227,maxAC:11,maxDC:195},
+  {make:"BMW",model:"IX",c:"LDV",bat:112,range:521,eff:0.2150,maxAC:11,maxDC:200},
+  {make:"CADILLAC",model:"LYRIQ",c:"LDV",bat:102,range:494,eff:0.2065,maxAC:19.2,maxDC:190},
+  {make:"CADILLAC",model:"OPTIQ",c:"LDV",bat:85,range:486,eff:0.1749,maxAC:11.5,maxDC:150},
+  {make:"CHEVROLET",model:"BLAZER EV",c:"LDV",bat:85,range:455,eff:0.1868,maxAC:11.5,maxDC:150},
+  {make:"CHEVROLET",model:"BOLT EV",c:"LDV",bat:65,range:417,eff:0.1559,maxAC:11.5,maxDC:55},
+  {make:"CHEVROLET",model:"BRIGHTDROP 400",c:"MDV",bat:102,range:288,eff:0.3542,maxAC:19.2,maxDC:120},
+  {make:"CHEVROLET",model:"BRIGHTDROP 600",c:"MDV",bat:102,range:288,eff:0.3542,maxAC:19.2,maxDC:120},
+  {make:"CHEVROLET",model:"EQUINOX EV",c:"LDV",bat:85,range:513,eff:0.1657,maxAC:11.5,maxDC:150},
+  {make:"CHEVROLET",model:"SILVERADO EV",c:"LDV",bat:170,range:632,eff:0.2690,maxAC:19.2,maxDC:350},
+  {make:"FORD",model:"E-TRANSIT-350 CARGO",c:"MDV",bat:68,range:203,eff:0.3350,maxAC:10.5,maxDC:115},
+  {make:"FORD",model:"F-150 LIGHTNING",c:"LDV",bat:98,range:370,eff:0.2649,maxAC:10.5,maxDC:150},
+  {make:"FORD",model:"MUSTANG MACH-E",c:"LDV",bat:70,range:360,eff:0.1944,maxAC:10.5,maxDC:150},
+  {make:"FREIGHTLINER",model:"ECASCADIA",c:"HDV",bat:438,range:230,eff:1.9043,maxAC:20,maxDC:350},
+  {make:"GENESIS",model:"ELECTRIFIED G80",c:"LDV",bat:87,range:454,eff:0.1916,maxAC:10.5,maxDC:350},
+  {make:"GENESIS",model:"ELECTRIFIED GV70",c:"LDV",bat:77,range:383,eff:0.2010,maxAC:10.9,maxDC:350},
+  {make:"GMC",model:"HUMMER EV",c:"LDV",bat:213,range:329,eff:0.6474,maxAC:11.5,maxDC:350},
+  {make:"GMC",model:"SIERRA EV",c:"LDV",bat:170,range:628,eff:0.2707,maxAC:19.2,maxDC:300},
+  {make:"HONDA",model:"PROLOGUE",c:"LDV",bat:85,range:452,eff:0.1881,maxAC:11,maxDC:150},
+  {make:"HYUNDAI",model:"IONIQ 5",c:"LDV",bat:77,range:415,eff:0.1855,maxAC:10.9,maxDC:350},
+  {make:"HYUNDAI",model:"IONIQ 6",c:"MDV",bat:77,range:509,eff:0.1513,maxAC:10.9,maxDC:235},
+  {make:"HYUNDAI",model:"IONIQ 9",c:"LDV",bat:110,range:515,eff:0.2136,maxAC:10.9,maxDC:233},
+  {make:"HYUNDAI",model:"KONA ELECTRIC",c:"LDV",bat:64,range:415,eff:0.1542,maxAC:7.2,maxDC:100},
+  {make:"KIA",model:"EV4",c:"LDV",bat:81,range:488,eff:0.1660,maxAC:10.9,maxDC:240},
+  {make:"KIA",model:"EV6",c:"LDV",bat:77,range:441,eff:0.1746,maxAC:10.9,maxDC:240},
+  {make:"KIA",model:"EV9",c:"LDV",bat:100,range:270,eff:0.3704,maxAC:10.9,maxDC:215},
+  {make:"LUCID",model:"AIR",c:"LDV",bat:88,range:676,eff:0.1302,maxAC:19.2,maxDC:210},
+  {make:"MERCEDES-BENZ",model:"EQB 350",c:"LDV",bat:67,range:365,eff:0.1836,maxAC:11,maxDC:100},
+  {make:"MERCEDES-BENZ",model:"EQE 350 SEDAN",c:"LDV",bat:91,range:418,eff:0.2177,maxAC:9.6,maxDC:170},
+  {make:"MERCEDES-BENZ",model:"EQS 450 SEDAN",c:"LDV",bat:108,range:547,eff:0.1974,maxAC:9.6,maxDC:200},
+  {make:"MERCEDES-BENZ",model:"ESPRINTER",c:"MDV",bat:113,range:248,eff:0.4556,maxAC:11,maxDC:115},
+  {make:"NISSAN",model:"ARIYA",c:"LDV",bat:66,range:330,eff:0.2000,maxAC:7.2,maxDC:130},
+  {make:"NISSAN",model:"LEAF",c:"LDV",bat:40,range:240,eff:0.1667,maxAC:6.6,maxDC:50},
+  {make:"PORSCHE",model:"MACAN ELECTRIC",c:"LDV",bat:95,range:496,eff:0.1915,maxAC:11,maxDC:270},
+  {make:"PORSCHE",model:"TAYCAN",c:"LDV",bat:79,range:320,eff:0.2469,maxAC:9.6,maxDC:270},
+  {make:"PORSCHE",model:"TAYCAN CROSS TURISMO",c:"LDV",bat:93,range:346,eff:0.2688,maxAC:9.6,maxDC:270},
+  {make:"RAM",model:"PROMASTER EV",c:"MDV",bat:110,range:162,eff:0.6790,maxAC:11,maxDC:150},
+  {make:"RIVIAN",model:"EDV 500",c:"MDV",bat:135,range:161,eff:0.8385,maxAC:19,maxDC:200},
+  {make:"RIVIAN",model:"EDV 700",c:"MDV",bat:135,range:153,eff:0.8824,maxAC:19,maxDC:200},
+  {make:"RIVIAN",model:"R1S",c:"LDV",bat:106,range:435,eff:0.2437,maxAC:11.5,maxDC:200},
+  {make:"RIVIAN",model:"R1T",c:"LDV",bat:106,range:435,eff:0.2437,maxAC:11.5,maxDC:200},
+  {make:"TESLA",model:"CYBERTRUCK",c:"LDV",bat:123,range:512,eff:0.2402,maxAC:11.5,maxDC:250},
+  {make:"TESLA",model:"MODEL 3",c:"LDV",bat:82,range:576,eff:0.1424,maxAC:11.5,maxDC:250},
+  {make:"TESLA",model:"MODEL S",c:"LDV",bat:100,range:652,eff:0.1534,maxAC:11.5,maxDC:250},
+  {make:"TESLA",model:"MODEL Y",c:"LDV",bat:81,range:531,eff:0.1525,maxAC:11.5,maxDC:250},
+  {make:"TESLA",model:"SEMI",c:"HDV",bat:900,range:500,eff:1.8000,maxAC:22,maxDC:750},
+  {make:"TOYOTA",model:"BZ4X",c:"LDV",bat:73,range:367,eff:0.1989,maxAC:6.6,maxDC:100},
+  {make:"VOLKSWAGEN",model:"ID.4",c:"LDV",bat:82,range:386,eff:0.2124,maxAC:11,maxDC:135},
+  {make:"VOLVO",model:"C40 RECHARGE",c:"LDV",bat:78,range:360,eff:0.2167,maxAC:11,maxDC:250},
+  {make:"VOLVO",model:"EC40",c:"LDV",bat:79,range:431,eff:0.1833,maxAC:11,maxDC:200},
+  {make:"VOLVO",model:"EX30",c:"LDV",bat:64,range:253,eff:0.2530,maxAC:11,maxDC:153},
+  {make:"VOLVO",model:"EX40",c:"LDV",bat:79,range:418,eff:0.1890,maxAC:11,maxDC:200},
+  {make:"VOLVO",model:"EX90",c:"LDV",bat:107,range:483,eff:0.2215,maxAC:11,maxDC:250},
+  {make:"VOLVO",model:"XC40 RECHARGE",c:"LDV",bat:78,range:359,eff:0.2173,maxAC:11,maxDC:150}
+];
+const MAKES=[...new Set(SPECS.map(s=>s.make))].sort();
+
+// ── STATE ───────────────────────────────────────────────
+let cards=[],cid=0;
+let scenarios=[{id:1,res:null}];
+let activeId=1,scCount=1;
+
+// ── HELPERS ─────────────────────────────────────────────
+function mkMakes(sel){return'<option value="">— select make —</option>'+MAKES.map(m=>`<option value="${m}"${m===sel?' selected':''}>${m}</option>`).join('');}
+function mkModels(make,sel){
+  if(!make)return'<option value="">— select model —</option>';
+  return'<option value="">— select model —</option>'+SPECS.filter(s=>s.make===make).sort((a,b)=>a.model.localeCompare(b.model)).map(s=>`<option value="${s.make}|${s.model}"${(s.make+'|'+s.model)===sel?' selected':''}>${s.model}</option>`).join('');
+}
+function sn(id,done){const el=document.getElementById(id);el.className='snum'+(done?' done':'');el.textContent=done?'✓':id.replace('n','');}
+function getAct(){return scenarios.find(s=>s.id===activeId);}
+
+// ── VEHICLE CARD MANAGEMENT ──────────────────────────────
+function addVc(){
+  cid++;
+  cards.push({id:cid,make:'',model:'',spec:null,fleet:'',miles:'',dwell:'',peakMiles:'',routeType:'mixed',climate:'temperate',oppCharging:false});
+  renderCards();chk();
+}
+function rmVc(id){if(cards.length<=1)return;cards=cards.filter(c=>c.id!==id);renderCards();chk();}
+function setRoute(id,rt){const c=cards.find(x=>x.id===id);if(c){c.routeType=rt;renderCards();chk();}}
+function setClimate(id,cl){const c=cards.find(x=>x.id===id);if(c){c.climate=cl;renderCards();chk();}}
+function setOpp(id,val){const c=cards.find(x=>x.id===id);if(c){c.oppCharging=val;renderCards();chk();}}
+function onMake(id,val){const c=cards.find(x=>x.id===id);if(!c)return;c.make=val;c.model='';c.spec=null;renderCards();chk();}
+function onModel(id,val){
+  const c=cards.find(x=>x.id===id);if(!c)return;c.model=val;
+  if(val){const[mk,mo]=val.split('|');c.spec=SPECS.find(s=>s.make===mk&&s.model===mo);}else c.spec=null;
+  renderCards();chk();
+}
+function onF(id,key,val){const c=cards.find(x=>x.id===id);if(c)c[key]=val;chk();}
+
+function renderCards(){
+  document.getElementById('vcList').innerHTML=cards.map((c,i)=>`
+<div class="vc ${c.spec?'sel':''}" id="vc${c.id}">
+  <div class="vc-top">
+    <span class="vc-lbl">Vehicle type ${i+1}${c.spec?' — '+c.spec.make+' '+c.spec.model:''}</span>
+    ${cards.length>1?`<button class="vc-rm" onclick="rmVc(${c.id})">×</button>`:''}
+  </div>
+  <div class="vc-body">
+    <div>
+      <div class="vc-sec-lbl">Vehicle &amp; fleet</div>
+      <div class="row3">
+        <div class="fld"><label>Manufacturer</label><select onchange="onMake(${c.id},this.value)">${mkMakes(c.make)}</select></div>
+        <div class="fld"><label>Model</label><select onchange="onModel(${c.id},this.value)" ${!c.make?'disabled':''}>${mkModels(c.make,c.model)}</select></div>
+        <div class="fld"><label>Number of vehicles</label><input type="number" min="1" placeholder="e.g. 50" value="${c.fleet}" oninput="onF(${c.id},'fleet',this.value)"/></div>
+      </div>
+    </div>
+    <div class="vc-divider"></div>
+    <div>
+      <div class="vc-sec-lbl">Charging parameters</div>
+      <div class="row3">
+        <div class="fld">
+          <label>Avg daily mileage (mi)</label>
+          <input type="number" min="1" max="500" placeholder="e.g. 70" value="${c.miles}" ${!c.spec?'disabled':''} oninput="onF(${c.id},'miles',this.value)"/>
+          <div class="sub">Typical day mileage</div>
+        </div>
+        <div class="fld">
+          <label>Peak daily mileage (mi)</label>
+          <input type="number" min="1" max="600" placeholder="e.g. 110" value="${c.peakMiles}" ${!c.spec?'disabled':''} oninput="onF(${c.id},'peakMiles',this.value)"/>
+          <div class="sub">Busiest day — chargers sized to this</div>
+        </div>
+        <div class="fld">
+          <label>Dwell time (hrs/day)</label>
+          <input type="number" min="0.5" max="24" step="0.5" placeholder="e.g. 8" value="${c.dwell}" ${!c.spec?'disabled':''} oninput="onF(${c.id},'dwell',this.value)"/>
+          <div class="sub">Hours parked at depot per day</div>
+        </div>
+      </div>
+    </div>
+    <div class="vc-divider"></div>
+    <div>
+      <div class="vc-sec-lbl">Route profile</div>
+      <div class="route-pills">
+        ${Object.entries(ROUTE_TYPES).map(([k,v])=>`<button class="rpill ${c.routeType===k?'on':''}" onclick="setRoute(${c.id},'${k}')" ${!c.spec?'disabled':''}>${v.icon} ${v.label}</button>`).join('')}
+      </div>
+      <div class="sub" style="margin-top:6px">${c.spec?ROUTE_TYPES[c.routeType].dwellNote:'Select a vehicle to enable route options.'}</div>
+    </div>
+    <div class="vc-divider"></div>
+    <div>
+      <div class="vc-sec-lbl">Climate &amp; opportunity charging</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+        <div>
+          <div class="sub" style="margin-bottom:6px;font-weight:600;color:var(--mid)">OPERATING CLIMATE</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${Object.entries(CLIMATE).map(([k,v])=>`<button class="spill ${c.climate===k?'on':''}" onclick="setClimate(${c.id},'${k}')" ${!c.spec?'disabled':''}>${v.label}</button>`).join('')}
+          </div>
+          <div class="sub" style="margin-top:4px">${c.climate==='cold'?'⚠ Cold weather reduces battery range by ~20%':c.climate==='hot'?'Moderate ~8% range reduction applied':'No range penalty applied'}</div>
+        </div>
+        <div>
+          <div class="sub" style="margin-bottom:6px;font-weight:600;color:var(--mid)">OPPORTUNITY CHARGING EN-ROUTE</div>
+          <div style="display:flex;gap:6px">
+            <button class="spill ${c.oppCharging?'on':''}" onclick="setOpp(${c.id},true)" ${!c.spec?'disabled':''}>Yes — available mid-route</button>
+            <button class="spill ${!c.oppCharging?'on':''}" onclick="setOpp(${c.id},false)" ${!c.spec?'disabled':''}>No</button>
+          </div>
+          <div class="sub" style="margin-top:4px">${c.oppCharging?'Mid-route charging adds ~2h effective dwell, reducing depot charger count.':'All charging done at depot.'}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`).join('');
+}
+
+// ── VALIDATION ──────────────────────────────────────────
+function chk(){
+  const client=document.getElementById('clientName').value.trim();
+  const vOk=cards.length>0&&cards.every(c=>c.spec&&parseInt(c.fleet)>0&&parseFloat(c.miles)>0&&parseFloat(c.dwell)>0&&parseFloat(c.peakMiles)>0);
+  document.getElementById('genBtn').disabled=!(client&&vOk);
+  sn('n1',!!client);sn('n2',vOk);sn('n3',true);
+}
+
+// ── CALCULATION ENGINE ──────────────────────────────────
+function calcV(c){
+  const rt=ROUTE_TYPES[c.routeType];
+  const cl=CLIMATE[c.climate];
+  const spec=c.spec;
+  const fleet=parseInt(c.fleet);
+  const avgMiles=parseFloat(c.miles);
+  const peakMiles=parseFloat(c.peakMiles);
+  const baseDwell=parseFloat(c.dwell);
+  const adjEff=spec.eff*rt.effMult;
+  const finalEff=adjEff*(1/cl.rangeMult);
+  const peakKwh=peakMiles*finalEff;
+  const avgKwh=avgMiles*finalEff;
+  const usable=spec.bat*0.70;
+  const peakPct=Math.min((peakKwh/usable)*100,100);
+  const avgPct=Math.min((avgKwh/usable)*100,100);
+  let effDwell=baseDwell;
+  if(c.routeType==='urban'||c.routeType==='delivery') effDwell*=0.90;
+  if(c.oppCharging) effDwell+=2.0;
+  const avail=effDwell*0.85;
+  const l2kW=Math.min(spec.maxAC,11);
+  const l3kW=Math.min(spec.maxDC,150);
+  const l2h=peakKwh/l2kW;
+  const l3h=peakKwh/l3kW;
+  const l2ok=l2h<=avail;
+  const l3ok=l3h<=avail;
+  const vpl2=Math.max(1,Math.floor(avail/l2h));
+  const vpl3=Math.max(1,Math.floor(avail/l3h));
+  let l2=0,l3=0;
+  if(l2ok){l2=Math.ceil(fleet/vpl2);}
+  else if(l3ok){
+    const ov=l2h/avail;
+    if(ov<1.5){const f2=Math.round(fleet*.6);l2=Math.ceil(f2/vpl2);l3=Math.ceil((fleet-f2)/vpl3);}
+    else if(ov<2.5){const f2=Math.round(fleet*.3);l2=Math.ceil(f2/vpl2);l3=Math.ceil((fleet-f2)/vpl3);}
+    else{l3=Math.ceil(fleet/vpl3);}
+  } else {l3=fleet;}
+  return{avgKwh,peakKwh,avgPct,peakPct,l2h,l3h,l2kW,l3kW,l2,l3,l2ok,l3ok,avail,effDwell,baseDwell,fleet,avgMiles,peakMiles,adjEff,finalEff,rt,cl,oppCharging:c.oppCharging,routeType:c.routeType,climate:c.climate};
+}
+
+// ── GENERATE ────────────────────────────────────────────
+function generate(){
+  const sc=getAct();
+  const client=document.getElementById('clientName').value;
+  const perV=cards.map(c=>({spec:c.spec,fleet:parseInt(c.fleet),r:calcV(c),routeType:c.routeType,climate:c.climate,opp:c.oppCharging}));
+  sc.res={client,perV};
+  renderRes(sc.res);
+  document.getElementById('results').style.display='block';
+  document.getElementById('genBtn').style.display='none';
+  document.getElementById('resetBtn').style.display='block';
+  renderCmp();
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── RENDER RESULTS ──────────────────────────────────────
+function renderRes(r){
+  const tL2=r.perV.reduce((s,v)=>s+v.r.l2,0);
+  const tL3=r.perV.reduce((s,v)=>s+v.r.l3,0);
+  const tFleet=r.perV.reduce((s,v)=>s+v.fleet,0);
+  const mix=tL2>0&&tL3>0;
+
+  // Route callout
+  const routeHtml=r.perV.map(v=>{
+    const peakAdj=((v.r.peakMiles/v.r.avgMiles-1)*100).toFixed(0);
+    const effAdj=((v.r.rt.effMult-1)*100).toFixed(0);
+    const climAdj=((1/v.r.cl.rangeMult-1)*100).toFixed(0);
+    return`<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(5,175,220,.15)">
+      <div style="font-size:12px;font-weight:600;color:var(--info-t);margin-bottom:6px">${v.spec.make} ${v.spec.model}</div>
+      <div class="route-tags">
+        <span class="rtag">${v.r.rt.icon} ${v.r.rt.label}</span>
+        <span class="rtag ${parseFloat(effAdj)>0?'warn':''}">${parseFloat(effAdj)>=0?'+':''}${effAdj}% energy vs spec efficiency</span>
+        <span class="rtag ${v.climate!=='temperate'?'warn':''}">${v.r.cl.label} climate${v.climate!=='temperate'?' · +'+climAdj+'% efficiency penalty':''}</span>
+        <span class="rtag warn">Peak day ${v.r.peakMiles}mi (+${peakAdj}% above avg) — sized to peak</span>
+        ${v.r.effDwell!==v.r.baseDwell?`<span class="rtag warn">Effective dwell adjusted: ${v.r.baseDwell}h → ${v.r.effDwell.toFixed(1)}h${v.opp?' (incl. opportunity charging)':' (staggered arrivals)'}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('routeCallout').innerHTML=
+    `<div class="route-callout-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>Route &amp; climate factors applied to recommendation</div>`+routeHtml;
+
+  // Spec cards
+  document.getElementById('specOut').innerHTML=r.perV.map(v=>`
+<div class="spec-card">
+  <div class="spec-card-hdr">
+    <span class="spec-card-name">${v.spec.make} ${v.spec.model}</span>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <span class="spec-card-meta">${v.fleet} vehicles · ${v.spec.c}</span>
+      <span class="route-badge">${ROUTE_TYPES[v.routeType].icon} ${ROUTE_TYPES[v.routeType].label.split('/')[0].trim()}</span>
+    </div>
+  </div>
+  <div class="spec-row">
+    <div class="sp"><div class="sp-l">Battery</div><div class="sp-v">${v.spec.bat}</div><div class="sp-u">kWh</div></div>
+    <div class="sp"><div class="sp-l">EPA Range</div><div class="sp-v">${v.spec.range}</div><div class="sp-u">mi</div></div>
+    <div class="sp"><div class="sp-l">Adj. Efficiency</div><div class="sp-v">${v.r.finalEff.toFixed(3)}</div><div class="sp-u">kWh/mi</div></div>
+    <div class="sp"><div class="sp-l">Peak kWh/day</div><div class="sp-v">${v.r.peakKwh.toFixed(1)}</div><div class="sp-u">${v.r.peakPct.toFixed(0)}% batt</div></div>
+    <div class="sp"><div class="sp-l">Eff. dwell</div><div class="sp-v">${v.r.effDwell.toFixed(1)}</div><div class="sp-u">hrs</div></div>
+  </div>
+</div>`).join('');
+
+  // Rec
+  let recTxt=mix
+    ?`Recommend ${tL2} L2 standard charger${tL2!==1?'s':''} and ${tL3} L3 fast charger${tL3!==1?'s':''} for the combined fleet of ${tFleet} vehicles.`
+    :tL2>0
+      ?`Recommend ${tL2} L2 standard charger${tL2!==1?'s':''} for the combined fleet of ${tFleet} vehicles. No fast charging required.`
+      :`Recommend ${tL3} L3 DC fast charger${tL3!==1?'s':''} for the combined fleet of ${tFleet} vehicles.`;
+  document.getElementById('recMain').textContent=recTxt;
+
+  let why=`For ${r.client}'s fleet of ${tFleet} vehicles, charger sizing uses peak-day mileage adjusted for route type and climate — ensuring adequate charging capacity on the most demanding operating days. `;
+  r.perV.forEach(v=>{
+    const vn=`${v.spec.make} ${v.spec.model}`;
+    const effAdj=((v.r.rt.effMult-1)*100).toFixed(0);
+    why+=`The ${vn} (${v.fleet} vehicles, ${ROUTE_TYPES[v.routeType].label.toLowerCase()} routes) consumes ~${v.r.peakKwh.toFixed(1)} kWh on a peak day of ${v.r.peakMiles}mi — ${v.r.peakPct.toFixed(0)}% of usable battery — after applying a ${parseFloat(effAdj)>=0?'+':''}${effAdj}% route efficiency adjustment${v.climate!=='temperate'?' and '+((1/v.r.cl.rangeMult-1)*100).toFixed(0)+'% climate penalty':''}. With an effective dwell of ${v.r.effDwell.toFixed(1)}h, L2 needs ~${v.r.l2h.toFixed(1)}h and L3 needs ~${v.r.l3h.toFixed(2)}h to replenish. ${v.r.l2ok?'L2 standard is sufficient for peak days.':'L2 exceeds the dwell window on peak days'+(v.r.l3ok?'; fast charging is required.':'; even L3 is constrained — opportunity charging is essential.')+' '} `;
+  });
+  if(mix) why+=`A mixed configuration is required to serve all vehicle types optimally.`;
+  document.getElementById('recWhy').textContent=why;
+
+  document.getElementById('chargerResult').innerHTML=`
+<div class="ch-box ${tL2>0?'hi':''}">
+  <div class="ch-type-label">L2 — Standard AC Charging</div>
+  <div class="ch-count">${tL2}</div>
+  <div class="ch-name">charger${tL2!==1?'s':''} across entire fleet</div>
+  <div class="ch-sub">${tL2>0?'Covers vehicle types where peak-day demand fits within effective dwell time.':'Not required — peak-day mileage and route profile exceed L2 capacity for all types.'}</div>
+</div>
+<div class="ch-box ${tL3>0?'hi':''}">
+  <div class="ch-type-label">L3 — DC Fast Charging (DCFC)</div>
+  <div class="ch-count">${tL3}</div>
+  <div class="ch-name">charger${tL3!==1?'s':''} across entire fleet</div>
+  <div class="ch-sub">${tL3>0?'Required for vehicle types where peak-day demand exceeds L2 capacity within the dwell window.':'Not required — L2 standard charging meets all peak-day needs.'}</div>
+</div>`;
+
+  // Table
+  document.getElementById('fleetTbl').innerHTML=`
+<thead><tr>
+  <th>Vehicle</th><th>Class</th><th>Fleet</th><th>Route</th><th>Avg mi</th><th>Peak mi</th><th>Peak kWh</th><th>Eff. dwell</th><th>L2 time</th><th>L3 time</th><th>L2</th><th>L3</th><th>Config</th>
+</tr></thead>
+<tbody>
+${r.perV.map(v=>{
+  const m2=v.r.l2>0&&v.r.l3>0;
+  const badge=m2?`<span class="badge badge-mix">Mixed</span>`:v.r.l2>0?`<span class="badge badge-l2">L2</span>`:`<span class="badge badge-l3">L3</span>`;
+  return`<tr>
+    <td><strong>${v.spec.make} ${v.spec.model}</strong></td>
+    <td>${v.spec.c}</td><td>${v.fleet}</td>
+    <td style="white-space:nowrap">${ROUTE_TYPES[v.routeType].icon} ${ROUTE_TYPES[v.routeType].label.split('/')[0].trim()}</td>
+    <td>${v.r.avgMiles}mi</td><td><strong>${v.r.peakMiles}mi</strong></td>
+    <td>${v.r.peakKwh.toFixed(1)}</td>
+    <td>${v.r.effDwell.toFixed(1)}h</td>
+    <td>${v.r.l2h.toFixed(1)}h ${v.r.l2ok?'✓':'✗'}</td>
+    <td>${v.r.l3h.toFixed(2)}h ${v.r.l3ok?'✓':'✗'}</td>
+    <td><strong>${v.r.l2}</strong></td><td><strong>${v.r.l3}</strong></td>
+    <td>${badge}</td>
+  </tr>`;
+}).join('')}
+<tr class="total-row">
+  <td colspan="3"><strong>Total</strong></td><td colspan="7">—</td>
+  <td><strong>${tL2}</strong></td><td><strong>${tL3}</strong></td>
+  <td>${mix?`<span class="badge badge-mix">Mixed</span>`:tL2>0?`<span class="badge badge-l2">L2</span>`:`<span class="badge badge-l3">L3</span>`}</td>
+</tr></tbody>`;
+
+  document.getElementById('tFleet').textContent=tFleet;
+  document.getElementById('tL2').textContent=tL2;
+  document.getElementById('tL3').textContent=tL3;
+
+  // Flags
+  const fa=document.getElementById('flagsArea');fa.innerHTML='';
+  if(mix) fa.innerHTML+=mkF('i','Mixed L2/L3 configuration. Plan separate charging zones per vehicle type to simplify load management and depot layout.');
+  r.perV.forEach(v=>{
+    if(v.climate==='cold') fa.innerHTML+=mkF('w',`${v.spec.make} ${v.spec.model}: cold climate applies a 20% range penalty. Charger sizing accounts for this — monitor battery performance in extreme cold.`);
+    if(v.r.peakPct>85) fa.innerHTML+=mkF('w',`${v.spec.make} ${v.spec.model}: peak day depletes ${v.r.peakPct.toFixed(0)}% of usable battery. Priority or staggered charging schedules are recommended.`);
+    if(!v.r.l3ok) fa.innerHTML+=mkF('w',`${v.spec.make} ${v.spec.model}: even DC fast charging (${v.r.l3h.toFixed(1)}h) is constrained by effective dwell (${v.r.avail.toFixed(1)}h) on peak days. Opportunity charging en-route is strongly recommended.`);
+    if(v.spec.c==='HDV') fa.innerHTML+=mkF('w',`${v.spec.make} ${v.spec.model}: heavy duty vehicle with very high grid demand. Early utility provider engagement and a load management system are essential before installation.`);
+    if(v.routeType==='delivery'&&!v.opp) fa.innerHTML+=mkF('i',`${v.spec.make} ${v.spec.model}: multi-stop delivery routes often have mid-route stops suitable for opportunity charging — enabling this could reduce fast charger requirements.`);
+  });
+  if(!fa.innerHTML) fa.innerHTML+=mkF('o','No critical flags. All vehicle types are within safe parameters for their route profiles and dwell windows.');
+}
+
+function mkF(t,txt){
+  const ic={
+    w:`<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>`,
+    o:`<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>`,
+    i:`<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>`
+  };
+  const cl={w:'fw',o:'fo',i:'fi'};
+  return`<div class="flag ${cl[t]}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px">${ic[t]}</svg><span>${txt}</span></div>`;
+}
+
+// ── SCENARIO MANAGEMENT ──────────────────────────────────
+function renderCmp(){
+  const wr=scenarios.filter(s=>s.res);
+  const cw=document.getElementById('cmpWrap');
+  if(wr.length<2){cw.style.display='none';return;}
+  cw.style.display='block';
+  document.getElementById('cmpTbl').innerHTML=`<thead><tr><th>Scenario</th><th>Fleet</th><th>L2 standard</th><th>L3 fast</th><th>Config</th></tr></thead><tbody>${
+    wr.map(s=>{
+      const tL2=s.res.perV.reduce((x,v)=>x+v.r.l2,0);
+      const tL3=s.res.perV.reduce((x,v)=>x+v.r.l3,0);
+      const tF=s.res.perV.reduce((x,v)=>x+v.fleet,0);
+      return`<tr class="${s.id===activeId?'on':''}"><td>Scenario ${s.id}</td><td>${tF}</td><td>${tL2}</td><td>${tL3}</td><td>${tL2>0&&tL3>0?'Mixed':tL2>0?'L2 only':'L3 only'}</td></tr>`;
+    }).join('')
+  }</tbody>`;
+}
+
+function renderTabs(){
+  document.getElementById('scTabs').innerHTML=
+    scenarios.map(s=>`<button class="sc-tab ${s.id===activeId?'on':''}" onclick="switchSc(${s.id})">Scenario ${s.id}</button>`).join('')+
+    `<button class="sc-add" onclick="addSc()">+ Add scenario</button>`;
+}
+
+function switchSc(id){
+  activeId=id;const sc=scenarios.find(s=>s.id===id);
+  if(sc&&sc.res){renderRes(sc.res);renderCmp();document.getElementById('results').style.display='block';}
+  else{document.getElementById('results').style.display='none';document.getElementById('genBtn').style.display='block';chk();}
+  renderTabs();
+}
+
+function addSc(){
+  scCount++;scenarios.push({id:scCount,res:null});activeId=scCount;
+  document.getElementById('genBtn').style.display='block';
+  document.getElementById('results').style.display='none';
+  renderTabs();chk();
+}
+
+function resetAll(){
+  cards=[];cid=0;scenarios=[{id:1,res:null}];activeId=1;scCount=1;
+  document.getElementById('clientName').value='';
+  document.getElementById('results').style.display='none';
+  document.getElementById('genBtn').style.display='block';
+  document.getElementById('genBtn').disabled=true;
+  document.getElementById('resetBtn').style.display='none';
+  ['n1','n2','n3'].forEach(id=>{const el=document.getElementById(id);el.className='snum';el.textContent=id.replace('n','');});
+  addVc();renderTabs();
+}
+
+// ── EXPORT ───────────────────────────────────────────────
+function dlTxt(){
+  const sc=getAct();if(!sc||!sc.res)return;
+  const r=sc.res;
+  const tL2=r.perV.reduce((s,v)=>s+v.r.l2,0);
+  const tL3=r.perV.reduce((s,v)=>s+v.r.l3,0);
+  const tF=r.perV.reduce((s,v)=>s+v.fleet,0);
+  const lines=[
+    'ELEMENT CHARGING — INTERNAL ADVISORY TOOL',
+    'EV Depot Charging Needs Analysis (with Route Analysis)',
+    '='.repeat(58),'',
+    `Client: ${r.client}`,`Scenario: ${activeId}`,`Date: ${new Date().toLocaleDateString('en-CA')}`,
+    `Prepared by: Element Charging FPS Team`,`Total fleet: ${tF} vehicles`,'',
+    'CHARGER TYPE REFERENCE','-'.repeat(40),
+    'L2 — Standard AC Charging: 240V, 7–11 kW. Best for overnight/long dwell (4–10 hrs).',
+    'L3 — DC Fast Charging (DCFC): 480V+, 50–350 kW. Charges to 80% in under 1 hour.','',
+    'VEHICLE & ROUTE DETAILS','-'.repeat(40),
+    ...r.perV.flatMap(v=>[``,
+      `${v.spec.make} ${v.spec.model} (${v.spec.c}) — ${v.fleet} vehicles`,
+      `  Route type: ${ROUTE_TYPES[v.routeType].label}`,
+      `  Climate: ${CLIMATE[v.climate].label}`,
+      `  Opportunity charging en-route: ${v.opp?'Yes':'No'}`,
+      `  Battery: ${v.spec.bat} kWh  |  EPA Range: ${v.spec.range} mi`,
+      `  Base efficiency: ${v.spec.eff.toFixed(3)} kWh/mi`,
+      `  Adjusted efficiency (route+climate): ${v.r.finalEff.toFixed(3)} kWh/mi`,
+      `  Avg mileage: ${v.r.avgMiles} mi/day  |  Peak mileage: ${v.r.peakMiles} mi/day`,
+      `  Peak energy demand: ${v.r.peakKwh.toFixed(1)} kWh (${v.r.peakPct.toFixed(0)}% of usable battery)`,
+      `  Base dwell: ${v.r.baseDwell}h  |  Effective dwell: ${v.r.effDwell.toFixed(1)}h`,
+      `  L2 replenish time (peak): ${v.r.l2h.toFixed(2)}h  |  L3 replenish time (peak): ${v.r.l3h.toFixed(2)}h`,
+      `  → Contribution: L2 chargers: ${v.r.l2}  |  L3 chargers: ${v.r.l3}`,
+    ]),
+    '','COMBINED FLEET RECOMMENDATION','-'.repeat(40),
+    `Total L2 standard chargers: ${tL2}`,
+    `Total L3 DC fast chargers:  ${tL3}`,
+    `Configuration: ${tL2>0&&tL3>0?'Mixed L2 + L3':tL2>0?'L2 standard only':'L3 fast only'}`,
+    '',
+    'JUSTIFICATION','-'.repeat(40),
+    document.getElementById('recWhy').textContent,
+    '','='.repeat(58),
+    'element Charging · EV Depot Needs Analyzer · For Internal FPS Partner Use',
+    `Generated: ${new Date().toLocaleString('en-CA')}`
+  ];
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`Element_Charging_Advisory_${(r.client||'Client').replace(/\s+/g,'_')}_Scenario${activeId}.txt`;
+  a.click();URL.revokeObjectURL(a.href);
+}
+
+function printPage(){window.print();}
+
+// ── INIT ─────────────────────────────────────────────────
+addVc();renderTabs();
+</script>
+</body>
+</html>
